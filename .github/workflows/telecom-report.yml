@@ -1,0 +1,30 @@
+name: Weekly Telecom Report
+
+on:
+  schedule:
+    - cron: '0 9 * * 1'
+  workflow_dispatch:
+
+jobs:
+  run-report:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Claude Code
+        run: npm install -g @anthropic-ai/claude-code
+
+      - name: Run report
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          mkdir -p reports
+          claude -p "$(cat telecom-report-prompt.md)" --allowedTools "WebSearch,Write"
+
+      - name: Save report
+        run: |
+          git config user.name "Claude Bot"
+          git config user.email "claude@bot.com"
+          git add reports/
+          git diff --staged --quiet || git commit -m "Weekly telecom report $(date +%Y-%m-%d)"
+          git push
